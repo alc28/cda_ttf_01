@@ -1,0 +1,30 @@
+---
+title: "eda1"
+author: "Adam Chandler"
+date: "January 29, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# load libraries
+library(tidyverse)
+library(readxl)
+
+df_cs <- read_csv("data/cs_sample_100.csv",, col_types = cols(.default = "c"))
+
+df_ilr <- read_excel("data/ilr_sample_100.xlsx", 
+    col_types = c("text", "text", "text", 
+        "text", "numeric", "text", "text", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text"))
+
+
+
+```
+
