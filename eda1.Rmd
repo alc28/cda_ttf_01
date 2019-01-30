@@ -14,17 +14,68 @@ knitr::opts_chunk$set(echo = TRUE)
 # load libraries
 library(tidyverse)
 library(readxl)
+library(janitor)
 
-df_cs <- read_csv("data/cs_sample_100.csv",, col_types = cols(.default = "c"))
+```
 
+
+
+```{r}
+# load data
+df_cs <- read_csv("data/cs_sample_100.csv",, col_types = cols(.default = "c")) %>%
+  clean_names() %>%
+  rename(ttf_category = in_current_subs,
+         citation = together)
+  
+tidy_cs <- df_cs %>%
+  mutate(ttf_value = case_when(
+    ttf_category == "open access" ~ 0.1,
+    ttf_category == "licensed" ~ 0.1,
+    ttf_category == "campus" ~ 1,
+    ttf_category == "annex" ~ 24,
+    ttf_category == "borrow direct" ~ 48,
+    ttf_category == "ill" ~ 72) ) %>%
+    mutate(field = "cs") %>%
+  select(field, ttf_category, ttf_value, citation) 
+
+  
 df_ilr <- read_excel("data/ilr_sample_100.xlsx", 
     col_types = c("text", "text", "text", 
         "text", "numeric", "text", "text", 
         "text", "text", "text", "text", "text", 
         "text", "text", "text", "text", "text", 
-        "text", "text", "text", "text"))
+        "text", "text", "text", "text")) %>%
+  clean_names() %>%
+  rename(ttf_category = source,
+         citation = together)
 
+tidy_ilr <- df_ilr %>%
+  mutate(ttf_value = case_when(
+    ttf_category == "open access" ~ 0.1,
+    ttf_category == "licensed" ~ 0.1,
+    ttf_category == "campus" ~ 1,
+    ttf_category == "annex" ~ 24,
+    ttf_category == "borrow direct" ~ 48,
+    ttf_category == "ill" ~ 72) ) %>%
+  mutate(field = "ilr") %>%
+  select(field, ttf_category, ttf_value, citation) 
+
+```
+
+
+
+```{r}
+# explore
+
+df <- rbind(tidy_cs, tidy_ilr)
+
+df %>%
+  group_by(field, ttf_category) %>%
+  summarize(n = n(),
+            sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
 
 
 ```
+
+
 
