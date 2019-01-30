@@ -388,12 +388,16 @@ library(tidyverse)</code></pre>
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()</code></pre>
 <pre class="r"><code>library(readxl)
-library(janitor)</code></pre>
+library(janitor)
+library(stringr)</code></pre>
 <pre class="r"><code># load data
 df_cs &lt;- read_csv(&quot;data/cs_sample_100.csv&quot;,, col_types = cols(.default = &quot;c&quot;)) %&gt;%
   clean_names() %&gt;%
   rename(ttf_category = in_current_subs,
-         citation = together)
+         citation = together) %&gt;%
+  mutate(ttf_category = tolower(ttf_category),
+         ttf_category = ifelse(ttf_category == &quot;na&quot;, NA, ttf_category)  )
+
   
 tidy_cs &lt;- df_cs %&gt;%
   mutate(ttf_value = case_when(
@@ -406,8 +410,17 @@ tidy_cs &lt;- df_cs %&gt;%
     mutate(field = &quot;cs&quot;) %&gt;%
   select(field, ttf_category, ttf_value, citation) 
 
-  
-df_ilr &lt;- read_excel(&quot;data/ilr_sample_100.xlsx&quot;, 
+head(tidy_cs)</code></pre>
+<pre><code>## # A tibble: 6 x 4
+##   field ttf_category  ttf_value citation                                   
+##   &lt;chr&gt; &lt;chr&gt;             &lt;dbl&gt; &lt;chr&gt;                                      
+## 1 cs    open access         0.1 Conference Paper__Advances in Neural Infor…
+## 2 cs    &lt;NA&gt;               NA   Article__Google Image Search for CEO Has B…
+## 3 cs    licensed            0.1 Article__Linguistic Inquiry__1977          
+## 4 cs    borrow direct      48   Article__Estimation and Tracking: Principl…
+## 5 cs    licensed            0.1 Conference Paper__Proceedings of the ACM S…
+## 6 cs    licensed            0.1 Conference Paper__Proceedings of SPIE - Th…</code></pre>
+<pre class="r"><code>df_ilr &lt;- read_excel(&quot;data/ilr_sample_100.xlsx&quot;, 
     col_types = c(&quot;text&quot;, &quot;text&quot;, &quot;text&quot;, 
         &quot;text&quot;, &quot;numeric&quot;, &quot;text&quot;, &quot;text&quot;, 
         &quot;text&quot;, &quot;text&quot;, &quot;text&quot;, &quot;text&quot;, &quot;text&quot;, 
@@ -415,7 +428,10 @@ df_ilr &lt;- read_excel(&quot;data/ilr_sample_100.xlsx&quot;,
         &quot;text&quot;, &quot;text&quot;, &quot;text&quot;, &quot;text&quot;)) %&gt;%
   clean_names() %&gt;%
   rename(ttf_category = source,
-         citation = together)
+         citation = together) %&gt;%
+  mutate(ttf_category = tolower(ttf_category),
+         ttf_category = ifelse(ttf_category == &quot;na&quot;, NA, ttf_category)  )
+
 
 tidy_ilr &lt;- df_ilr %&gt;%
   mutate(ttf_value = case_when(
@@ -426,30 +442,50 @@ tidy_ilr &lt;- df_ilr %&gt;%
     ttf_category == &quot;borrow direct&quot; ~ 48,
     ttf_category == &quot;ill&quot; ~ 72) ) %&gt;%
   mutate(field = &quot;ilr&quot;) %&gt;%
-  select(field, ttf_category, ttf_value, citation) </code></pre>
+  select(field, ttf_category, ttf_value, citation) 
+
+head(tidy_ilr)</code></pre>
+<pre><code>## # A tibble: 6 x 4
+##   field ttf_category ttf_value citation                                    
+##   &lt;chr&gt; &lt;chr&gt;            &lt;dbl&gt; &lt;chr&gt;                                       
+## 1 ilr   open access        0.1 Article__Journal of Labor Economics__1997   
+## 2 ilr   licensed           0.1 Article__International Journal of Sociology…
+## 3 ilr   &lt;NA&gt;              NA   Article__NA__0000                           
+## 4 ilr   licensed           0.1 Article__Annual Review of Economics__2009   
+## 5 ilr   licensed           0.1 Article__Doctoral Education in the Humaniti…
+## 6 ilr   licensed           0.1 Article__Personality and Social Psychology …</code></pre>
 <pre class="r"><code># explore
 
 df &lt;- rbind(tidy_cs, tidy_ilr)
 
 df %&gt;%
+  filter(!is.na(ttf_category)) %&gt;%
+  group_by(field) %&gt;%
+  summarize(n = n(),
+            sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))</code></pre>
+<pre><code>## # A tibble: 2 x 3
+##   field     n sum_ttf_value_sum
+##   &lt;chr&gt; &lt;int&gt;             &lt;dbl&gt;
+## 1 cs       95              252.
+## 2 ilr      96              379</code></pre>
+<pre class="r"><code>df %&gt;%
+  filter(!is.na(ttf_category)) %&gt;%
   group_by(field, ttf_category) %&gt;%
   summarize(n = n(),
             sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))</code></pre>
-<pre><code>## # A tibble: 11 x 4
+<pre><code>## # A tibble: 9 x 4
 ## # Groups:   field [?]
-##    field ttf_category      n sum_ttf_value_sum
-##    &lt;chr&gt; &lt;chr&gt;         &lt;int&gt;             &lt;dbl&gt;
-##  1 cs    borrow direct     2              96  
-##  2 cs    campus            3               3  
-##  3 cs    ILL               2               0  
-##  4 cs    licensed         58               5.8
-##  5 cs    open access      30               3  
-##  6 cs    &lt;NA&gt;              5               0  
-##  7 ilr   campus           11              11  
-##  8 ilr   ILL               5               0  
-##  9 ilr   licensed         47               4.7
-## 10 ilr   NA                4               0  
-## 11 ilr   open access      33               3.3</code></pre>
+##   field ttf_category      n sum_ttf_value_sum
+##   &lt;chr&gt; &lt;chr&gt;         &lt;int&gt;             &lt;dbl&gt;
+## 1 cs    borrow direct     2              96  
+## 2 cs    campus            3               3  
+## 3 cs    ill               2             144  
+## 4 cs    licensed         58               5.8
+## 5 cs    open access      30               3  
+## 6 ilr   campus           11              11  
+## 7 ilr   ill               5             360  
+## 8 ilr   licensed         47               4.7
+## 9 ilr   open access      33               3.3</code></pre>
 
 
 

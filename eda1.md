@@ -36,6 +36,7 @@ library(tidyverse)
 ```r
 library(readxl)
 library(janitor)
+library(stringr)
 ```
 
 
@@ -46,7 +47,10 @@ library(janitor)
 df_cs <- read_csv("data/cs_sample_100.csv",, col_types = cols(.default = "c")) %>%
   clean_names() %>%
   rename(ttf_category = in_current_subs,
-         citation = together)
+         citation = together) %>%
+  mutate(ttf_category = tolower(ttf_category),
+         ttf_category = ifelse(ttf_category == "na", NA, ttf_category)  )
+
   
 tidy_cs <- df_cs %>%
   mutate(ttf_value = case_when(
@@ -59,7 +63,22 @@ tidy_cs <- df_cs %>%
     mutate(field = "cs") %>%
   select(field, ttf_category, ttf_value, citation) 
 
-  
+head(tidy_cs)
+```
+
+```
+## # A tibble: 6 x 4
+##   field ttf_category  ttf_value citation                                   
+##   <chr> <chr>             <dbl> <chr>                                      
+## 1 cs    open access         0.1 Conference Paper__Advances in Neural Infor…
+## 2 cs    <NA>               NA   Article__Google Image Search for CEO Has B…
+## 3 cs    licensed            0.1 Article__Linguistic Inquiry__1977          
+## 4 cs    borrow direct      48   Article__Estimation and Tracking: Principl…
+## 5 cs    licensed            0.1 Conference Paper__Proceedings of the ACM S…
+## 6 cs    licensed            0.1 Conference Paper__Proceedings of SPIE - Th…
+```
+
+```r
 df_ilr <- read_excel("data/ilr_sample_100.xlsx", 
     col_types = c("text", "text", "text", 
         "text", "numeric", "text", "text", 
@@ -68,7 +87,10 @@ df_ilr <- read_excel("data/ilr_sample_100.xlsx",
         "text", "text", "text", "text")) %>%
   clean_names() %>%
   rename(ttf_category = source,
-         citation = together)
+         citation = together) %>%
+  mutate(ttf_category = tolower(ttf_category),
+         ttf_category = ifelse(ttf_category == "na", NA, ttf_category)  )
+
 
 tidy_ilr <- df_ilr %>%
   mutate(ttf_value = case_when(
@@ -80,6 +102,20 @@ tidy_ilr <- df_ilr %>%
     ttf_category == "ill" ~ 72) ) %>%
   mutate(field = "ilr") %>%
   select(field, ttf_category, ttf_value, citation) 
+
+head(tidy_ilr)
+```
+
+```
+## # A tibble: 6 x 4
+##   field ttf_category ttf_value citation                                    
+##   <chr> <chr>            <dbl> <chr>                                       
+## 1 ilr   open access        0.1 Article__Journal of Labor Economics__1997   
+## 2 ilr   licensed           0.1 Article__International Journal of Sociology…
+## 3 ilr   <NA>              NA   Article__NA__0000                           
+## 4 ilr   licensed           0.1 Article__Annual Review of Economics__2009   
+## 5 ilr   licensed           0.1 Article__Doctoral Education in the Humaniti…
+## 6 ilr   licensed           0.1 Article__Personality and Social Psychology …
 ```
 
 
@@ -91,27 +127,42 @@ tidy_ilr <- df_ilr %>%
 df <- rbind(tidy_cs, tidy_ilr)
 
 df %>%
+  filter(!is.na(ttf_category)) %>%
+  group_by(field) %>%
+  summarize(n = n(),
+            sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
+```
+
+```
+## # A tibble: 2 x 3
+##   field     n sum_ttf_value_sum
+##   <chr> <int>             <dbl>
+## 1 cs       95              252.
+## 2 ilr      96              379
+```
+
+```r
+df %>%
+  filter(!is.na(ttf_category)) %>%
   group_by(field, ttf_category) %>%
   summarize(n = n(),
             sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
 ```
 
 ```
-## # A tibble: 11 x 4
+## # A tibble: 9 x 4
 ## # Groups:   field [?]
-##    field ttf_category      n sum_ttf_value_sum
-##    <chr> <chr>         <int>             <dbl>
-##  1 cs    borrow direct     2              96  
-##  2 cs    campus            3               3  
-##  3 cs    ILL               2               0  
-##  4 cs    licensed         58               5.8
-##  5 cs    open access      30               3  
-##  6 cs    <NA>              5               0  
-##  7 ilr   campus           11              11  
-##  8 ilr   ILL               5               0  
-##  9 ilr   licensed         47               4.7
-## 10 ilr   NA                4               0  
-## 11 ilr   open access      33               3.3
+##   field ttf_category      n sum_ttf_value_sum
+##   <chr> <chr>         <int>             <dbl>
+## 1 cs    borrow direct     2              96  
+## 2 cs    campus            3               3  
+## 3 cs    ill               2             144  
+## 4 cs    licensed         58               5.8
+## 5 cs    open access      30               3  
+## 6 ilr   campus           11              11  
+## 7 ilr   ill               5             360  
+## 8 ilr   licensed         47               4.7
+## 9 ilr   open access      33               3.3
 ```
 
 

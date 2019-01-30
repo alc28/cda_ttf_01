@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readxl)
 library(janitor)
+library(stringr)
 
 ```
 
@@ -27,7 +28,10 @@ library(janitor)
 df_cs <- read_csv("data/cs_sample_100.csv",, col_types = cols(.default = "c")) %>%
   clean_names() %>%
   rename(ttf_category = in_current_subs,
-         citation = together)
+         citation = together) %>%
+  mutate(ttf_category = tolower(ttf_category),
+         ttf_category = ifelse(ttf_category == "na", NA, ttf_category)  )
+
   
 tidy_cs <- df_cs %>%
   mutate(ttf_value = case_when(
@@ -49,7 +53,10 @@ df_ilr <- read_excel("data/ilr_sample_100.xlsx",
         "text", "text", "text", "text")) %>%
   clean_names() %>%
   rename(ttf_category = source,
-         citation = together)
+         citation = together) %>%
+  mutate(ttf_category = tolower(ttf_category),
+         ttf_category = ifelse(ttf_category == "na", NA, ttf_category)  )
+
 
 tidy_ilr <- df_ilr %>%
   mutate(ttf_value = case_when(
@@ -72,6 +79,14 @@ tidy_ilr <- df_ilr %>%
 df <- rbind(tidy_cs, tidy_ilr)
 
 df %>%
+  filter(!is.na(ttf_category)) %>%
+  group_by(field) %>%
+  summarize(n = n(),
+            sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
+
+
+df %>%
+  filter(!is.na(ttf_category)) %>%
   group_by(field, ttf_category) %>%
   summarize(n = n(),
             sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
