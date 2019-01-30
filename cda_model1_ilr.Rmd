@@ -1,0 +1,225 @@
+---
+title: "Time to fulfillment model: ILR"
+author: "CUL CDA Team"
+date: "2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# libraries
+library(tidyverse)
+library(janitor)
+library(knitr)
+
+
+```
+
+# Problem
+
+Estimate how long it takes faculty to get resources they need in their research.
+
+
+# ILR faculty
+
+
+# Dataset
+
+Jeremy downloaded this dataset from Scopus.
+
+1.)    For any listing of citations in Scopus, you can set the order of appearance to date, either ascending or descending (oldest or newest first), number of citations, alphabetical by author name A-Z or Z-A, or source title A-Z or Z-A  
+
+2.)    There are 148 named Cornell authors(some are single authors with multiple forms of the same name in print) publishing in Industrial and Labor Relations. I’m attaching a download as follows:  
+
+-Cornell-affiliated  
+-phrase {industrial and labor relations} anywhere
+-2017 or 2018 publication date  
+-10 random author names (16 documents)  
+-References cited (1119 documents)  
+-Set ranking to Cited by (highest)  
+-Downloaded 1119 as a CSV; attached hereto  
+
+
+Author names: 
+Ehrenberg, R.G.
+Kahn, L.M.
+Sassler, S.
+Cook, M.
+Lucas, B.
+Smith, R.S.
+Ajunwa, I.
+Alvarez, J.F.
+Ameri, M.
+Kahn, L.
+
+
+```{r}
+# import scopus data
+# quote = "\"",
+
+
+
+df_raw <- read_csv("data/scopus_ilr_10faculty.csv", quote = "\"")
+
+df <- df_raw %>%
+  clean_names %>%
+  unite(together, c("document_type","source_title", "year"), sep = "__", remove = FALSE)
+
+glimpse(df)
+
+```
+
+
+### Exploratory data analaysis: some counts
+
+
+```{r}
+
+df <- df %>%
+  unite(together, c("document_type","source_title", "year"), sep = "__", remove = FALSE)
+
+# sort by document_type, source_title, year
+
+df %>%
+  count(together) %>%
+  arrange(together) %>%
+  slice(1:20) %>%
+  kable
+
+# sort by count
+
+df %>%
+  count(together, sort = TRUE) %>%
+  slice(1:20) %>%
+  kable
+
+# count of document_type
+
+df %>%
+  count(document_type, sort = TRUE) %>%
+  filter(n > 1)
+
+lookup <- df %>%
+  select(source_title, document_type)
+
+df %>%
+  count(source_title, document_type, sort = TRUE) %>%
+  left_join(lookup) %>%
+  unique
+
+# count by Scopus access_type (open access?)
+
+df %>%
+  count(access_type)
+
+df %>%
+#  filter(str_detect(access_type, "Open")) %>%
+  count(year) %>%
+  arrange(desc(year))
+
+
+```
+
+
+# Challenge
+
+For each of these title/year combinations we will need to determine in what form a patron can get it through the library.  Is it online, on the shelf, available through borrow direct, or ILL? Hard to do that for 2000 citations, probably.
+
+# Solution?
+
+Create sample, either manually or with computer, then manually check to see how item patron can access item through library.
+
+
+```{r}
+s1 <- df %>%
+  sample_n(100, replace = TRUE)
+
+s1 %>%
+  select(together, access_type) %>%
+  arrange(together) %>%
+  kable
+
+
+```
+
+
+
+# Next step for us: Determing for each item its fulfillment liklihood
+
+Let's start with our sample of 100, do it manually, and measure how long it takes. That will give us an estimate of the problems we can expect and a per item manual lookup approach.  
+
+### Simulation of where we might end up after doing this for Computer Science, ILR (and more)
+
+What is the most efficient way to lookup each citation to see how long it took patron if they acquired it via CUL?  
+
+Draft fulfillment categories:
+
+* open_access  
+* licensed
+* campus
+* annex  
+* borrow_direct  
+* ill  
+
+```{r}
+df_obs <- tibble(
+  id = 1:4,
+  patrongroup = c("computer_science", 
+                  "computer_science", 
+                  "ilr", 
+                  "ilr"),
+  reference = c("journal of cs",
+                "proceedings of cs conference 2017",
+                "white paper on hiring",
+                "modern ilr anthology volume 2"),
+  fulfillment_category = c("now", 
+                                  "on_campus", 
+                                  "borrow_direct", 
+                                  "ill"),
+  fullfilment_in_hrs = c("0.1", 
+                                  "1", 
+                                  "48", 
+                                  "72")
+  )  
+
+df_obs %>%
+  select(fulfillment_category, fullfilment_in_hrs)
+
+df_obs
+
+
+```
+
+
+By applying values to the fulfillment categories we will be able to at least summarize the difference by group, e.g., computer science vs. ILR. This will be our initial, time to fulfillment model.
+
+
+```{r}
+df_obs %>%
+  group_by(patrongroup) %>%
+  mutate(fullfilment_in_hrs = as.numeric(fullfilment_in_hrs)) %>%
+  summarise(ttf_in_hrs = mean(fullfilment_in_hrs))
+
+```
+
+ 
+```{r}
+
+write_csv(s1, "data/ilr_sample_100.csv")
+
+```
+
+These are the categories possible:  
+"open_access"  
+"licensed"  
+"campus"  
+"borrow_direct"  
+"ILL"
+
+library(tidyverse)
+library(janitor)
+
