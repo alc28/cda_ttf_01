@@ -44,6 +44,7 @@ tidy_cs <- df_cs %>%
     mutate(field = "cs") %>%
   select(field, ttf_category, ttf_value, citation) 
 
+head(tidy_cs)
   
 df_ilr <- read_excel("data/ilr_sample_100.xlsx", 
     col_types = c("text", "text", "text", 
@@ -69,6 +70,7 @@ tidy_ilr <- df_ilr %>%
   mutate(field = "ilr") %>%
   select(field, ttf_category, ttf_value, citation) 
 
+head(tidy_ilr)
 ```
 
 
@@ -82,14 +84,14 @@ df %>%
   filter(!is.na(ttf_category)) %>%
   group_by(field) %>%
   summarize(n = n(),
-            sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
+            sum_ttf_value= sum(ttf_value,  na.rm = TRUE))
 
 
 df %>%
   filter(!is.na(ttf_category)) %>%
   group_by(field, ttf_category) %>%
   summarize(n = n(),
-            sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
+            sum_ttf_value = sum(ttf_value,  na.rm = TRUE))
 
 
 ```

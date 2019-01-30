@@ -130,15 +130,15 @@ df %>%
   filter(!is.na(ttf_category)) %>%
   group_by(field) %>%
   summarize(n = n(),
-            sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
+            sum_ttf_value= sum(ttf_value,  na.rm = TRUE))
 ```
 
 ```
 ## # A tibble: 2 x 3
-##   field     n sum_ttf_value_sum
-##   <chr> <int>             <dbl>
-## 1 cs       95              252.
-## 2 ilr      96              379
+##   field     n sum_ttf_value
+##   <chr> <int>         <dbl>
+## 1 cs       95          252.
+## 2 ilr      96          379
 ```
 
 ```r
@@ -146,23 +146,23 @@ df %>%
   filter(!is.na(ttf_category)) %>%
   group_by(field, ttf_category) %>%
   summarize(n = n(),
-            sum_ttf_value_sum = sum(ttf_value,  na.rm = TRUE))
+            sum_ttf_value = sum(ttf_value,  na.rm = TRUE))
 ```
 
 ```
 ## # A tibble: 9 x 4
 ## # Groups:   field [?]
-##   field ttf_category      n sum_ttf_value_sum
-##   <chr> <chr>         <int>             <dbl>
-## 1 cs    borrow direct     2              96  
-## 2 cs    campus            3               3  
-## 3 cs    ill               2             144  
-## 4 cs    licensed         58               5.8
-## 5 cs    open access      30               3  
-## 6 ilr   campus           11              11  
-## 7 ilr   ill               5             360  
-## 8 ilr   licensed         47               4.7
-## 9 ilr   open access      33               3.3
+##   field ttf_category      n sum_ttf_value
+##   <chr> <chr>         <int>         <dbl>
+## 1 cs    borrow direct     2          96  
+## 2 cs    campus            3           3  
+## 3 cs    ill               2         144  
+## 4 cs    licensed         58           5.8
+## 5 cs    open access      30           3  
+## 6 ilr   campus           11          11  
+## 7 ilr   ill               5         360  
+## 8 ilr   licensed         47           4.7
+## 9 ilr   open access      33           3.3
 ```
 
 
