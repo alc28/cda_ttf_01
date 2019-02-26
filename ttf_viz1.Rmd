@@ -1,0 +1,181 @@
+---
+title: "TTF Viz1"
+author: "Adam Chandler"
+date: "February 25, 2019"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+
+
+```{r}
+# libraries
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(forcats)
+library(stringr)
+
+
+```
+
+
+```{r}
+# load data
+
+
+raw_history_sample_100 <- read_excel("data/history_sample_100.xlsx")
+names(raw_history_sample_100)[1] <- "fulfillment_type"
+names(raw_history_sample_100)
+history_sample_100 <- raw_history_sample_100 %>%
+  clean_names %>%
+  mutate(sample_group = "history_sample_100") %>%
+  select(sample_group, fulfillment_type) %>%
+  slice(1:100)
+
+raw_history_sample_250 <- read_excel("data/history_sample_250.xlsx")
+names(raw_history_sample_250)[1] <- "fulfillment_type"
+history_sample_250 <- raw_history_sample_250 %>%
+  clean_names %>%
+  mutate(sample_group = "history_sample_250") %>%
+  select(sample_group, fulfillment_type)
+
+raw_cs_sample_100 <- read_csv("data/cs_sample_100.csv")
+names(raw_cs_sample_100)[1] <- "fulfillment_type"
+cs_sample_100 <- raw_cs_sample_100 %>%
+  clean_names %>%
+  mutate(sample_group = "cs_sample_100") %>%
+  select(sample_group, fulfillment_type)
+
+raw_ilr_sample_100 <- read_excel("data/ilr_sample_100.xlsx")
+names(raw_ilr_sample_100)[1] <- "fulfillment_type"
+ilr_sample_100 <- raw_ilr_sample_100 %>%
+  clean_names %>%
+  mutate(sample_group = "ilr_sample_100") %>%
+  select(sample_group, fulfillment_type)
+
+
+remove(df)
+
+df <- do.call(rbind, list(cs_sample_100, ilr_sample_100, history_sample_100, history_sample_250)) %>%
+  mutate(fulfillment_type = str_trim(fulfillment_type, "both"),
+         fulfillment_type = ifelse(is.na(fulfillment_type), "NA", fulfillment_type),
+         fulfillment_type = as.factor(fulfillment_type),
+         fulfillment_type = fct_relevel(fulfillment_type, "open access", "licensed", "campus", "annex", "borrow direct", "ILL", "NA"),
+         fulfillment_type = fct_recode(fulfillment_type,
+                                       "campus" = "olin"))
+
+  
+df %>%
+  count(fulfillment_type)
+
+
+
+
+```
+
+
+
+```{r}
+# do some counting
+
+df_summary <- df %>%
+  group_by(sample_group, fulfillment_type) %>%
+  count() %>%
+  ungroup
+
+totals_by_group <- df_summary %>%
+  group_by(sample_group) %>%
+  summarize(total_in_group = sum(n)) 
+
+df_summary <- df_summary %>%
+  left_join(totals_by_group, by = "sample_group") %>%
+  mutate(prop_fulfillment = round(n / total_in_group,2))
+
+
+```
+
+
+
+```{r}
+
+df %>%
+  ggplot(aes(fulfillment_type)) +
+  geom_bar() +
+  coord_flip()
+
+```
+
+```{r}
+
+
+df %>%
+  filter(str_detect(sample_group, "history")) %>%
+  ggplot(aes(fulfillment_type)) +
+  geom_bar() +
+  coord_flip() +
+  facet_grid(~sample_group)
+
+
+
+```
+
+
+```{r}
+df %>%
+  ggplot(aes(fulfillment_type, fill = sample_group)) +
+  geom_bar() +
+  facet_grid(sample_group ~ .) +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        strip.text.y = element_blank()) +
+  labs(title = "Time to fulfillment by sample group")
+ 
+
+
+
+```
+
+```{r}
+
+df_summary %>%
+  ggplot(aes(fulfillment_type, prop_fulfillment, fill = sample_group)) +
+  geom_col() +
+  facet_grid(sample_group ~ .) +
+  theme_light() +
+  theme(legend.title = element_blank(),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        strip.text.y = element_blank(),
+        panel.spacing = unit(1, "lines")) +
+  labs(title = "Time to fulfillment distribution by sample group",
+       caption = "Data source: Scopus, random sample of 2017/2018 works cited by Cornell faculty",
+       x = "fulfillment type",
+       y = "percentage") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+
+ggsave(plot = last_plot(),
+       filename = "output/Time_to_fulfillment_proportion_by_sample_group.pdf",
+       width=11,
+       height=8.5,
+       dpi = 600)
+
+ggsave(plot = last_plot(),
+       filename = "output/Time_to_fulfillment_proportion_by_sample_group.png",
+       width=10,
+       height=7,
+       dpi = 300)
+
+
+```
+
